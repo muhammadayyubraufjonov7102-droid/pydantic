@@ -85,8 +85,42 @@ print(emp)
 #6. Field constraints (cheklovlar: ge, le, gt, min_length, max_length, pattern)
 
 class Product(BaseModel):
-    price: int
+    price: float =Field(gt=0)
+prod=Product(price=12.3)
+print(prod)
 class User(BaseModel):
-    username: list[str]
+    username: str =Field(
+        ...,
+        pattern=r"^[a-zA-Z0-9_]+$"
+    )
+user=User(username="Ali123_")
+print(user)
 class Review(BaseModel):
-    rating: int
+    rating: int=Field(ge=1, le=5)
+reviv=Review(rating=5)
+print(reviv)
+
+#7. Field va required combination
+
+class Profile(BaseModel):
+    name: str             
+    bio: str | None = None
+    age: int = Field(gt=18) 
+
+prof = Profile(
+    name="Ali",
+    age=25
+)
+print(prof)
+
+class Order(BaseModel):
+    id: int
+    status: str = Field(default="pending")
+    total: float = Field(gt=0) 
+    
+order = Order(
+    id=101,
+    total=250.75
+)
+print(order)
+          
