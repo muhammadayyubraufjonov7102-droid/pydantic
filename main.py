@@ -123,4 +123,6 @@ order = Order(
     total=250.75
 )
 print(order)
+
+#ustoz Kompyuterim ustada edi dushanbagacha yakunlab qo'yaman
           
