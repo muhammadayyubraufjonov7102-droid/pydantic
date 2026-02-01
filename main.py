@@ -124,5 +124,36 @@ order = Order(
 )
 print(order)
 
-#ustoz Kompyuterim ustada edi dushanbagacha yakunlab qo'yaman
+
           
+#8. @field_validator
+
+
+class Person(BaseModel):
+    birth_year: int
+    
+    @field_validator("birth_year")
+    @classmethod
+    
+    def filt_birth(cls, v):
+        if v < 1900:
+            raise ValueError("Tug'ilgan ku 1900 dan keyingi bo‘lishi kerak!")
+        else:
+            return v
+        
+    
+class Product(BaseModel):
+    price: int
+    
+    @field_validator("price")
+    @classmethod
+    
+    def filt_price(clas, v):
+        if v > 1000:
+            raise ValueError("Price 1000 dan katta!")
+        else:
+            return v
+        
+    
+    
+    
