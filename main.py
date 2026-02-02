@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field, EmailStr, field_validator
+from pydantic import BaseModel, Field, EmailStr, field_validator, model_validator, computed_field
+from typing_extensions import Annotated
 #1. Basic model (Asosiy model)
 
 class Book(BaseModel):
@@ -14,7 +15,7 @@ class Movie(BaseModel):
     director: str
     duration_minutes: int
     
-movie = Movie(name="Olamlarga nur sochgan oy", director="Moustapha Akkad", duration_minutesr="178")
+movie = Movie(name="Olamlarga nur sochgan oy", director="Moustapha Akkad", duration_minutes="178")
 print(movie)
 
 
@@ -40,10 +41,10 @@ class ShoppingCart(BaseModel):
 s=ShoppingCart(items=["olma", "behi", "anor"])
 print(s)
 
-class Invertory(BaseModel):
+class Inventory(BaseModel):
     stock: dict[str, int]
     
-i=Invertory(stock={
+i=Inventory(stock={
     "olma": 10,
     "behi": 5,
     "anor": 7
@@ -124,10 +125,8 @@ order = Order(
 )
 print(order)
 
-
           
 #8. @field_validator
-
 
 class Person(BaseModel):
     birth_year: int
@@ -137,7 +136,7 @@ class Person(BaseModel):
     
     def filt_birth(cls, v):
         if v < 1900:
-            raise ValueError("Tug'ilgan ku 1900 dan keyingi bo‘lishi kerak!")
+            raise ValueError("Tug'ilgan ku 1900 dan keyingi bolishi kerak!")
         else:
             return v
         
@@ -150,10 +149,166 @@ class Product(BaseModel):
     
     def filt_price(clas, v):
         if v > 1000:
-            raise ValueError("Price 1000 dan katta!")
+            print("Price 1000 dan katta!")
         else:
             return v
+
+
+#9. @model_validator, modes after, before    
+ 
+class Event(BaseModel):
+    start_date: str
+    end_date: str
+    
+    @model_validator(mode="before")
+    @classmethod
+    def filt_data(cls, data):
+        start = data.get("start_date")
+        end = data.get("end_date")
         
+        if start < end:
+            raise ValueError("error")
+        else:
+            return "access"
     
+
+class Transaction(BaseModel):
+    amount: int
+    currency: str
     
+    @model_validator(mode="after")
     
+    def filt_abs(self):
+        if self.amount < 0:
+            raise ValueError("error")
+        else:
+            return self
+        
+
+
+#10. Nested models (Ichma-ich modellar)
+
+class Address(BaseModel):
+    street: str
+    city: str
+    zipcode: int
+    
+class User(BaseModel):
+    name: str
+    email: EmailStr
+    address: Address
+
+class Item(BaseModel):
+    name: str
+    price: int
+    
+class Order(BaseModel):
+    user: User
+    items: list[Item]
+
+
+#11. model_dump, model_dump_json, exclude, include, exclude_none
+    
+class User(BaseModel):
+    name: str
+    email: EmailStr
+    password: str   
+       
+u = User(name="Ali", email="ali@gmail.com", password="12345a")
+print(u.model_dump(include={"name", "email"}))
+
+
+class Order(BaseModel):
+    id: int
+    user: User
+    items: list[Item]
+    discount: int | None=None
+    
+o=Order(id=1, user=[name="Ali", email="ali@gmail.com", password="12345a"])
+print(o.model_dump_json(exclude_none=True))
+
+
+#12. Field alias, model_dump(by_alias=True), "populate_by_name": True
+
+class User(BaseModel):
+    first_name: str =Field(alias="fName")
+    
+u = User(first_name="Ali")
+print(u.model_dump(by_alias=True))
+
+class Product(BaseModel):
+    product_id: int =Field(alias="pid")
+    
+    model_config = {"populated_by_name": True}
+p = Product(product_id=2)
+print(p.product_id)
+  
+  
+    
+#13. @computed_field bilan @property
+
+class Rectangle(BaseModel):
+    width: float
+    height: float
+    
+    @computed_field
+    @property
+    def area(self) -> float:
+        return self.width * self.height
+    
+class Invoice(BaseModel):
+    unit_price: float
+    quantitiy : int
+    
+    @computed_field
+    @property
+    def total_price(self) -> float:
+        return self.unit_price * self.quantitiy
+    
+
+
+#14. Model_config: "extra": "forbid", "strict": True, "frozen": True   
+    
+class User(BaseModel):
+    first_name: str
+    
+    model_config = {
+        "extra": "forbid"
+    }
+    
+class Product(BaseModel):
+    name : str
+    
+    model_config = {
+        "strict":True
+    }    
+    
+class ConfigTest(BaseModel):
+    title : str
+    
+    model_config = {
+        "frozen": True }
+    
+
+
+#15. model_validate(), model_validate_json(), "from_attributes": True
+
+class Person(BaseModel):
+    name : str
+    
+json_data = '{"name": "Ali"}'
+    
+p = Person.model_validate_json(json_data)
+print(p)
+
+class User(BaseModel):
+    id: int
+    name: str
+    age: int
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+#16. Custom types
