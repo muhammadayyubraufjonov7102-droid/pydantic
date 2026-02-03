@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, EmailStr, field_validator, model_validator, computed_field
 from typing_extensions import Annotated
+from datetime import date
 #1. Basic model (Asosiy model)
 
 class Book(BaseModel):
@@ -157,8 +158,8 @@ class Product(BaseModel):
 #9. @model_validator, modes after, before    
  
 class Event(BaseModel):
-    start_date: str
-    end_date: str
+    start_date: date
+    end_date: date
     
     @model_validator(mode="before")
     @classmethod
@@ -166,10 +167,10 @@ class Event(BaseModel):
         start = data.get("start_date")
         end = data.get("end_date")
         
-        if start < end:
+        if start > end:
             raise ValueError("error")
         else:
-            return "access"
+            return data
     
 
 class Transaction(BaseModel):
@@ -217,6 +218,9 @@ class User(BaseModel):
 u = User(name="Ali", email="ali@gmail.com", password="12345a")
 print(u.model_dump(include={"name", "email"}))
 
+class Item(BaseModel):
+    name: str
+    price: int
 
 class Order(BaseModel):
     id: int
@@ -224,7 +228,7 @@ class Order(BaseModel):
     items: list[Item]
     discount: int | None=None
     
-o=Order(id=1, user=[name="Ali", email="ali@gmail.com", password="12345a"])
+o=Order(id=1, user=User(name="Ali", email="ali@gmail.com", password="12345a"), items=[Item(name="Book", price=100), Item(name="Pen", price=20)])
 print(o.model_dump_json(exclude_none=True))
 
 
@@ -312,3 +316,37 @@ class User(BaseModel):
 
 
 #16. Custom types
+
+def Color(v: str) -> str:     # Color tipini yaratib, faqat "red", "green", "blue" qabul qiladigan qilib yozing.
+    allowed = {"red", "green", "blue"}
+    if v not in allowed:
+        raise ValueError("""Color tipi faqat: "red", "green", "blue" bo'lishi kerak""")
+    return v
+
+def phone(v: str) -> str:  #PhoneNumber tipini yaratib, faqat raqam va + bilan boshlangan telefon raqamini qabul qiling.
+    if not v.startswith("+"):
+        raise ValueError("faqat + bilan boshlangan bo'lishi kerak!")
+    return v
+
+#17. Custom error messages
+
+class User(BaseModel):    #Age maydoni uchun maxsus xato yozing: agar 18 dan kichik bo‘lsa "Foydalanuvchi 18 yoshdan kichik bo‘la olmaydi".
+    age: int
+
+    @field_validator("age")
+    @classmethod
+    def check_age(cls, v):
+        if v < 18:
+            raise ValueError("Yosh 18 dan katta bolishi kerak")
+        return v
+
+class Username(BaseModel):  #Username maydoni uchun pattern xatosi yuzaga kelganda "Foydalanuvchi nomi faqat harflar va raqamlardan iborat bo‘lishi kerak" xabarini chiqarish.
+    name: str
+    
+    @field_validator("name")
+    @classmethod
+    def check_name(cls, v: str):
+        if not v.isalnum():
+            raise ValueError("faqat harflar yoki raqamlardan iborat bo'lishi kerak!")
+        return v
+            
